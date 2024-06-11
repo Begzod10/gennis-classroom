@@ -1,4 +1,4 @@
-from backend.models.basic_model import *
+from backend.models.basic_model import db, Column, relationship, Integer, String, ForeignKey, Float, Boolean, JSON
 
 
 class Subject(db.Model):

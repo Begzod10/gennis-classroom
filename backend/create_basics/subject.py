@@ -122,8 +122,8 @@ def del_subject(subject_id):
     name = sub_name.name
     sub_name.disabled = True
     db.session.commit()
-    if sub_name.img_id:
-        check_img_remove(sub_name.img_id, File)
+    if sub_name.file_id:
+        check_img_remove(sub_name.file_id, File)
     subjects_server = Subject.query.order_by(Subject.id).all()
     send_subject_server("subject", platform_server, subjects_server)
     return del_msg(item=name, status=True)
