@@ -33,6 +33,7 @@ def complete_exercise():
     student_lesson = StudentLesson.query.filter(StudentLesson.lesson_id == lesson_id,
                                                 StudentLesson.student_id == student.id).first()
     lesson = Lesson.query.filter(Lesson.id == lesson_id).first()
+    pprint(request.get_json())
     for answer in answers:
         block = ExerciseBlock.query.filter(ExerciseBlock.id == answer['block_id']).first()
         exercise = Exercise.query.filter(Exercise.id == block.exercise_id).first()
