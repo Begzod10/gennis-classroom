@@ -37,6 +37,7 @@ def refresh(token):
         "access_token": access_token,
         "refresh_token": create_refresh_token(identity=user.id),
         "old_access_token": response.json()['access_token'],
+        "platform_refresh_token": response.json()['refresh_token'],
         "img": response.json()['profile_photo']
 
     }
@@ -87,9 +88,10 @@ def send_user(token):
         location = Location(name=location_name, platform_id=location_id)
         location.add_commit()
 
+    print(item['username'])
     user = User.query.filter(User.username == item['username']).first()
     if not user:
-        print('yoq user')
+
         user = User(username=item['username'], name=item['name'], surname=item['surname'], balance=item['balance'],
                     password=item['password'], platform_id=item['id'], location_id=location.id, role_id=role.id,
                     age=item['age'], father_name=item['father_name'], born_day=item['born_day'],
@@ -118,7 +120,7 @@ def send_user(token):
         user.born_day = item['born_day']
         user.father_name = item['father_name']
         user.age = item['age']
-        # user.user_id = item['user_id']
+        user.user_id = item['user_id']
         db.session.commit()
     if item['student']:
 

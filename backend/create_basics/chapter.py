@@ -118,7 +118,6 @@ def change_lesson():
     #     lesson.order = counter
     #     counter += 1
     #     db.session.commit()
-    print(index)
     if type_info == "lesson":
         lesson = request.get_json()['lesson']
         lesson = Lesson.query.filter(Lesson.id == lesson).first()
@@ -194,4 +193,4 @@ def change_lesson():
         "msg": "Tartib soni o'zgardi",
         "status": True
     })
-    pass
+

@@ -228,8 +228,9 @@ def group_profile(group_id, token):
 
         subject_level = SubjectLevel.query.filter(SubjectLevel.subject_id == group.subject_id).order_by(
             SubjectLevel.id).all()
+    user = User.query.filter_by(user_id=identity).first()
     return jsonify({
-        "data": group.convert_json(),
+        "data": group.convert_json(user=user),
         "subject_levels": iterate_models(levels),
         "curriculum": iterate_models(subject_level)
     })

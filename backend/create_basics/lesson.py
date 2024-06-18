@@ -1,4 +1,5 @@
-from backend.models.basic_model import Exercise, Lesson, LessonBlock, StudentLesson, Student, File, User
+from backend.models.basic_model import Exercise, Lesson, LessonBlock, StudentLesson, Student, File, User, \
+    StudentLessonArchive
 from app import api, app, jsonify, request, db, or_, contains_eager
 from backend.models.settings import iterate_models
 from backend.basics.settings import add_file, check_img_remove, edit_msg, create_msg, del_msg
@@ -28,10 +29,13 @@ def lessons(level_id):
     if request.method == "POST":
         info = request.form.get("info")
         get_json = json.loads(info)
-        pprint(get_json)
+
         selected_subject = get_json['subjectId']
         name = get_json['name']
         components = get_json['components']
+
+        number_test = get_json['number_test']
+        test_status = True if number_test else False
         chapter = get_json['chapter']
         order = 0
         lesson_get = Lesson.query.filter(Lesson.level_id == level_id, Lesson.subject_id == selected_subject,
@@ -39,8 +43,8 @@ def lessons(level_id):
             Lesson.order).all()
         if lesson_get:
             order = len(lesson_get)
-        print(order)
-        lesson_add = Lesson(subject_id=selected_subject, level_id=level_id, name=name, order=order, chapter_id=chapter)
+        lesson_add = Lesson(subject_id=selected_subject, level_id=level_id, name=name, order=order, chapter_id=chapter,
+                            test_status=test_status, test_numbers=number_test)
         lesson_add.add_commit()
         index_order = 0
         for component in components:
@@ -121,7 +125,6 @@ def info_lesson(chapter_id, order):
         next_order = False
         if next and next.order:
             next_order = next.order
-
         if prev and prev.order:
             prev_order = prev.order
         else:
@@ -133,13 +136,19 @@ def info_lesson(chapter_id, order):
 
             student_lesson = StudentLesson.query.filter(StudentLesson.lesson_id == lesson_id,
                                                         StudentLesson.student_id == student.id).first()
+            student_lesson_archive = StudentLessonArchive.query.filter(
+                StudentLessonArchive.student_lesson == student_lesson.id, StudentLessonArchive.student_id == student.id,
+                StudentLessonArchive.status == False, StudentLessonArchive.lesson_id == lesson_id).first()
 
             return jsonify({
-                "data": student_lesson.convert_json(entire=True),
+                "data": student_lesson.convert_json(entire=True,
+                                                    student_lesson_archive_id=student_lesson_archive.id) if student_lesson_archive else lesson.convert_json(
+                    entire=True),
                 "length": len(lessons),
                 'lesson_id': student_lesson.id,
                 "next": next_order,
-                "prev": prev_order
+                "prev": prev_order,
+                "archive_id": student_lesson_archive.id if student_lesson_archive else None
                 # "student_exercises": iterate_models(student_exercises, entire=True)
             })
         return jsonify({
@@ -155,8 +164,13 @@ def info_lesson(chapter_id, order):
 
         name = get_json['name']
         chapter = get_json['chapter']
+
         lesson.name = name
         lesson.chapter_id = chapter
+        number_test = get_json['number_test']
+        test_status = True if number_test else False
+        lesson.test_status = test_status
+        lesson.test_numbers = number_test
         db.session.commit()
         components = get_json['components']
         index_order = 0
