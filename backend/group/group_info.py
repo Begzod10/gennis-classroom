@@ -35,7 +35,6 @@ def get_groups():
     # print(user.student)
     # print(user.teacher)
 
-
     if student:
         groups = db.session.query(Group).join(Group.student).options(contains_eager(Group.student)).filter(
             Student.id == student.id).order_by(Group.platform_id).all()
@@ -89,6 +88,10 @@ def group_profile(group_id, token):
             return jsonify({
                 "msg": "Not logged in"
             })
+        group_level = response.json()['group']['level']
+        level = SubjectLevel.query.filter(SubjectLevel.name == group_level).first()
+        group.level_id = level.id
+        db.session.commit()
         users = response.json()['users']
         for item in users:
             location_id = item['location']['id']

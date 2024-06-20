@@ -35,7 +35,7 @@ def refresh(token):
     info = {
         "info": user.convert_json(),
         "access_token": access_token,
-        "refresh_token": create_refresh_token(identity=user.id),
+        "refresh_token": create_refresh_token(identity=user.user_id),
         "old_access_token": response.json()['access_token'],
         "platform_refresh_token": response.json()['refresh_token'],
         "img": response.json()['profile_photo']

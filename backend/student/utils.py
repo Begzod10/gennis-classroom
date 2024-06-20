@@ -56,15 +56,23 @@ def update_ratings(student, lesson_id):
                                                                StudentLessonArchive.lesson_id == lesson_id,
                                                                StudentLessonArchive.status == True).order_by(
         StudentLessonArchive.id).first()
+    if student_lesson_archive:
+        student_exercises_true = StudentExercise.query.filter(StudentExercise.student_id == student.id,
+                                                              StudentExercise.boolean == True,
+                                                              StudentExercise.student_lesson_archive_id == student_lesson_archive.id,
+                                                              StudentExercise.lesson_id == lesson_id).count()
 
-    student_exercises_true = StudentExercise.query.filter(StudentExercise.student_id == student.id,
-                                                          StudentExercise.boolean == True,
-                                                          StudentExercise.student_lesson_archive_id == student_lesson_archive.id,
-                                                          StudentExercise.lesson_id == lesson_id).count()
+        student_exercises = StudentExercise.query.filter(StudentExercise.student_id == student.id,
+                                                         StudentExercise.student_lesson_archive_id == student_lesson_archive.id,
+                                                         StudentExercise.lesson_id == lesson_id).count()
+    else:
+        student_exercises_true = StudentExercise.query.filter(StudentExercise.student_id == student.id,
+                                                              StudentExercise.boolean == True,
 
-    student_exercises = StudentExercise.query.filter(StudentExercise.student_id == student.id,
-                                                     StudentExercise.student_lesson_archive_id == student_lesson_archive.id,
-                                                     StudentExercise.lesson_id == lesson_id).count()
+                                                              StudentExercise.lesson_id == lesson_id).count()
+
+        student_exercises = StudentExercise.query.filter(StudentExercise.student_id == student.id,
+                                                         StudentExercise.lesson_id == lesson_id).count()
     student_exercises_all = StudentExercise.query.filter(StudentExercise.student_id == student.id,
                                                          StudentExercise.lesson_id == lesson_id).all()
     lesson = Lesson.query.filter(Lesson.id == lesson_id).first()

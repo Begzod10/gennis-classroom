@@ -164,7 +164,7 @@ class Group(db.Model):
                 "finished": student_subject.finished if student_subject else None,
                 "percentage": student_subject.percentage if student_subject else None
             },
-            "course": self.subject_level.convert_json() if self.subject_level else "",
+            "course": self.subject_level.convert_json() if self.subject_level else {},
             "teacher": {
                 "id": teacher.user_id if teacher else None,
                 "name": teacher.user.name if teacher else None,
