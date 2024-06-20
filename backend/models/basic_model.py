@@ -108,7 +108,7 @@ class Student(db.Model):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('user.id'))
     debtor = Column(Integer)
-    student_question = relationship("StudentQuestion", lazy="select", order_by="StudentQuestion.id")
+    student_question = relationship("StudentQuestion", lazy="select", backref="student", order_by="StudentQuestion.id")
     donelesson = relationship("StudentExercise", backref="student", order_by="StudentExercise.id")
     groups = relationship("Group", secondary="student_group", backref="student", order_by="Group.id")
     studentlesson = relationship("StudentLesson", backref="student", order_by="StudentLesson.id")

@@ -1,4 +1,5 @@
 from backend.models.basic_model import *
+from datetime import datetime
 
 
 class StudentQuestion(db.Model):
@@ -12,6 +13,23 @@ class StudentQuestion(db.Model):
     question_answers = relationship("QuestionAnswers", lazy="select", order_by="QuestionAnswers.id")
     question_answer_comment = relationship("QuestionAnswerComment", lazy="select", order_by="QuestionAnswerComment.id")
 
+    def convert_json(self, entire=False):
+
+        info = {
+            "id": self.id,
+            "date": datetime.strptime(f'{self.date.year}-{self.date.month}-{self.date.day}', '%Y-%m-%d'),
+            'student': self.student.convert_json(),
+            'subject': self.subject.convert_json(),
+            "img": None,
+            "question": self.question,
+            'answers': [],
+            'level': None
+        }
+        if self.file and self.file.url:
+            info['img'] = self.file.url
+
+        return info
+
 
 class QuestionAnswers(db.Model):
     __tablename__ = "question_answers"
@@ -24,6 +42,22 @@ class QuestionAnswers(db.Model):
     subject_id = Column(Integer, ForeignKey("subject.id"))
     question_id = Column(Integer, ForeignKey("student_question.id"))
     question_answer_comment = relationship("QuestionAnswerComment", lazy="select", order_by="QuestionAnswerComment.id")
+
+    def convert_json(self, entire=False):
+        info = {
+            "id": self.id,
+            "date": datetime.strptime(f'{self.date.year}-{self.date.month}-{self.date.day}', '%Y-%m-%d'),
+            'user': self.user.convert_json(),
+            'subject': self.subject.convert_json(),
+            "img": None,
+            'checked': self.checked,
+            "question": self.question,
+            'comments': [],
+        }
+        if self.file and self.file.url:
+            info['img'] = self.file.url
+
+        return info
 
 
 class QuestionAnswerComment(db.Model):
