@@ -6,6 +6,7 @@ from backend.models.basic_model import Role, Teacher, User, Student, Location, S
     StudentSubject
 from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_token, create_refresh_token
 from pprint import pprint
+from backend.lessons.models import StudentLevel
 
 
 @app.route(f'{api}/mobile/send_user/<token>')
@@ -171,3 +172,41 @@ def mobile_check_group_info(gr):
         })
         db.session.commit()
     return group
+
+
+@app.route(f'{api}/mobile/group_statistics/<int:group_id>')
+@jwt_required()
+# @cross_origin()
+def group_statistics(group_id):
+    print(get_jwt_identity())
+    user = User.query.filter_by(user_id=get_jwt_identity()).first()
+    print(user)
+    student = Student.query.filter_by(user_id=user.id).first()
+    group = Group.query.filter_by(id=group_id).first()
+    student_subject = StudentSubject.query.filter_by(subject_id=group.subject_id, student_id=student.id).first()
+    student_levels = StudentLevel.query.filter_by(subject_id=group.subject_id, group_id=group_id,
+                                                  student_id=student.id).all()
+    return jsonify({
+        "data": {
+            'subject': student_subject.convert_json(),
+            'levels': [level.convert_json() for level in student_levels]
+        }
+    })
+
+
+@app.route(f'{api}/mobile/contents/<int:group_id>')
+@jwt_required()
+# @cross_origin()
+def mobile_contents(group_id):
+    user = User.query.filter_by(user_id=get_jwt_identity()).first()
+    student = Student.query.filter_by(user_id=user.id).first()
+    group = Group.query.filter_by(id=group_id).first()
+    student_subject = StudentSubject.query.filter_by(subject_id=group.subject_id, student_id=student.id).first()
+    student_levels = StudentLevel.query.filter_by(subject_id=group.subject_id, group_id=group_id,
+                                                  student_id=student.id).all()
+    return jsonify({
+        "data": {
+            'subject': student_subject.convert_json(),
+            'levels': [level.convert_json() for level in student_levels]
+        }
+    })

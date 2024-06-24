@@ -1,11 +1,10 @@
 from backend.models.basic_model import StudentLesson, StudentChapter, db, StudentLevel, StudentSubject, Lesson, \
-    StudentExercise
+    StudentExercise, StudentLessonArchive
 
 
 def update_student_datas(student, lesson_id):
     student_lesson = StudentLesson.query.filter(StudentLesson.lesson_id == lesson_id,
                                                 StudentLesson.student_id == student.id).first()
-    print(student_lesson)
     lesson = Lesson.query.filter(Lesson.id == student_lesson.lesson_id).first()
     if len(lesson.exercises) == 0:
         StudentLesson.query.filter(StudentLesson.id == lesson_id).update({
@@ -53,18 +52,32 @@ def update_student_datas(student, lesson_id):
 def update_ratings(student, lesson_id):
     student_lesson = StudentLesson.query.filter(StudentLesson.lesson_id == lesson_id,
                                                 StudentLesson.student_id == student.id).first()
-    student_exercises_true = StudentExercise.query.filter(StudentExercise.student_id == student.id,
-                                                          StudentExercise.boolean == True,
-                                                          StudentExercise.lesson_id == lesson_id).count()
-    student_exercises = StudentExercise.query.filter(StudentExercise.student_id == student.id,
-                                                     StudentExercise.lesson_id == lesson_id).count()
+    student_lesson_archive = StudentLessonArchive.query.filter(StudentLessonArchive.student_id == student.id,
+                                                               StudentLessonArchive.lesson_id == lesson_id,
+                                                               StudentLessonArchive.status == True).order_by(
+        StudentLessonArchive.id).first()
+    if student_lesson_archive:
+        student_exercises_true = StudentExercise.query.filter(StudentExercise.student_id == student.id,
+                                                              StudentExercise.boolean == True,
+                                                              StudentExercise.student_lesson_archive_id == student_lesson_archive.id,
+                                                              StudentExercise.lesson_id == lesson_id).count()
+
+        student_exercises = StudentExercise.query.filter(StudentExercise.student_id == student.id,
+                                                         StudentExercise.student_lesson_archive_id == student_lesson_archive.id,
+                                                         StudentExercise.lesson_id == lesson_id).count()
+    else:
+        student_exercises_true = StudentExercise.query.filter(StudentExercise.student_id == student.id,
+                                                              StudentExercise.boolean == True,
+
+                                                              StudentExercise.lesson_id == lesson_id).count()
+
+        student_exercises = StudentExercise.query.filter(StudentExercise.student_id == student.id,
+                                                         StudentExercise.lesson_id == lesson_id).count()
     student_exercises_all = StudentExercise.query.filter(StudentExercise.student_id == student.id,
                                                          StudentExercise.lesson_id == lesson_id).all()
     lesson = Lesson.query.filter(Lesson.id == lesson_id).first()
     exercise_id = list(set([ex.exercise_id for ex in student_exercises_all]))
 
-    print(len(lesson.exercises))
-    print(len(exercise_id))
     if len(lesson.exercises) == len(exercise_id):
         student_lesson.finished = True
         db.session.commit()

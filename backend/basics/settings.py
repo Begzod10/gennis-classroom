@@ -49,8 +49,8 @@ def save_img(photo, app, type_file=None):
         app.config['UPLOAD_FOLDER'] = img_folder()
         photo.save(os.path.join(app.config['UPLOAD_FOLDER'], photo_file))
         return (photo_url, file_name)
-    photo_url = audio_url() + "/" + photo_file
-    app.config['UPLOAD_FOLDER'] = audio_folder()
+    photo_url = img_url() + "/" + photo_file
+    app.config['UPLOAD_FOLDER'] = img_folder()
     photo.save(os.path.join(app.config['UPLOAD_FOLDER'], photo_file))
     return (photo_url, file_name)
 

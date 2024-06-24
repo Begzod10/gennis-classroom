@@ -1,5 +1,7 @@
+import datetime
+
 from backend.models.basic_model import Student, StudentLesson, ExerciseAnswers, StudentExercise, StudentExerciseBlock, \
-    User, StudentLevel, Exercise, ExerciseBlock, StudentChapter, StudentSubject, Lesson
+    User, StudentLevel, Exercise, ExerciseBlock, StudentChapter, StudentSubject, Lesson, StudentLessonArchive
 from app import api, app, db, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from backend.models.settings import iterate_models
@@ -33,6 +35,14 @@ def complete_exercise():
     student_lesson = StudentLesson.query.filter(StudentLesson.lesson_id == lesson_id,
                                                 StudentLesson.student_id == student.id).first()
     lesson = Lesson.query.filter(Lesson.id == lesson_id).first()
+    student_lesson_archive = StudentLessonArchive.query.filter(StudentLessonArchive.student_id == student.id,
+                                                               StudentLessonArchive.lesson_id == lesson.id,
+                                                               StudentLessonArchive.student_lesson == student_lesson.id,
+                                                               StudentLessonArchive.status == False).first()
+    if not student_lesson_archive:
+        student_lesson_archive = StudentLessonArchive(student_id=student.id, student_lesson=student_lesson.id,
+                                                      lesson_id=lesson_id)
+        student_lesson_archive.add_commit()
     for answer in answers:
         block = ExerciseBlock.query.filter(ExerciseBlock.id == answer['block_id']).first()
         exercise = Exercise.query.filter(Exercise.id == block.exercise_id).first()
@@ -40,10 +50,12 @@ def complete_exercise():
                                                         StudentExerciseBlock.student_id == student.id,
                                                         StudentExerciseBlock.block_id == block.id,
                                                         StudentExerciseBlock.exercise_id == exercise.id,
+                                                        StudentExerciseBlock.student_lesson_archive_id == student_lesson_archive.id,
                                                         StudentExerciseBlock.chapter_id == lesson.chapter_id).first()
         if not exist_block:
             student_exe_block = StudentExerciseBlock(student_id=student.id, block_id=block.id, exercise_id=exercise.id,
                                                      clone=answer['answers'], lesson_id=lesson_id,
+                                                     student_lesson_archive_id=student_lesson_archive.id,
                                                      chapter_id=lesson.chapter_id)
             student_exe_block.add_commit()
 
@@ -51,34 +63,59 @@ def complete_exercise():
             'type'] == "question" or answer['innerType'] == "imageInText" and answer['type'] == "question":
             exercise_answer = ExerciseAnswers.query.filter(ExerciseAnswers.block_id == answer['block_id'],
                                                            ExerciseAnswers.status == True).first()
-            for ans in answer['answers']:
-                if ans['checked'] == True:
-                    status = False
-                    if exercise_answer.order == ans['index']:
-                        status = True
-                    else:
-                        exercise_answer = ExerciseAnswers.query.filter(ExerciseAnswers.block_id == answer['block_id'],
-                                                                       ExerciseAnswers.order == ans['index']).first()
-                    exist_exercise = StudentExercise.query.filter(StudentExercise.student_id == student.id,
-                                                                  StudentExercise.lesson_id == lesson_id,
-                                                                  StudentExercise.exercise_id == exercise.id,
-                                                                  StudentExercise.answer_id == exercise_answer.id,
-                                                                  StudentExercise.student_chapter_id == student_lesson.self_chapter_id,
-                                                                  StudentExercise.chapter_id == lesson.chapter_id).first()
-                    if not exist_exercise:
-                        student_exercise = StudentExercise(student_id=student.id, lesson_id=lesson_id,
-                                                           exercise_id=exercise.id, subject_id=exercise.subject_id,
-                                                           type_id=exercise.type_id, level_id=exercise.level_id,
-                                                           boolean=status, block_id=block.id,
-                                                           answer_id=exercise_answer.id, value=ans['checked'],
-                                                           student_chapter_id=student_lesson.self_chapter_id,
-                                                           chapter_id=lesson.chapter_id)
-                        student_exercise.add_commit()
-                    else:
-                        return jsonify({
-                            'msg': 'seryoz'
-                        })
-            update_ratings(student, lesson_id)
+            if answer['variants']['type'] == "input":
+                status = False
+                if exercise_answer.desc == answer['answers']:
+                    status = True
+                exist_exercise = StudentExercise.query.filter(StudentExercise.student_id == student.id,
+                                                              StudentExercise.lesson_id == lesson_id,
+                                                              StudentExercise.exercise_id == exercise.id,
+                                                              StudentExercise.answer_id == exercise_answer.id,
+                                                              StudentExercise.student_chapter_id == student_lesson.self_chapter_id,
+                                                              StudentExercise.chapter_id == lesson.chapter_id,
+                                                              StudentExercise.student_lesson_archive_id == student_lesson_archive.id).first()
+                if not exist_exercise:
+                    student_exercise = StudentExercise(student_id=student.id, lesson_id=lesson_id,
+                                                       exercise_id=exercise.id, subject_id=exercise.subject_id,
+                                                       type_id=exercise.type_id, level_id=exercise.level_id,
+                                                       boolean=status, block_id=block.id,
+                                                       answer_id=exercise_answer.id, value=answer['answers'],
+                                                       student_chapter_id=student_lesson.self_chapter_id,
+                                                       student_lesson_archive_id=student_lesson_archive.id,
+                                                       chapter_id=lesson.chapter_id)
+                    student_exercise.add_commit()
+            else:
+                for ans in answer['answers']:
+                    if ans['checked'] == True:
+                        status = False
+                        if exercise_answer.order == ans['index']:
+                            status = True
+                        else:
+                            exercise_answer = ExerciseAnswers.query.filter(
+                                ExerciseAnswers.block_id == answer['block_id'],
+                                ExerciseAnswers.order == ans['index']).first()
+                        exist_exercise = StudentExercise.query.filter(StudentExercise.student_id == student.id,
+                                                                      StudentExercise.lesson_id == lesson_id,
+                                                                      StudentExercise.exercise_id == exercise.id,
+                                                                      StudentExercise.answer_id == exercise_answer.id,
+                                                                      StudentExercise.student_chapter_id == student_lesson.self_chapter_id,
+                                                                      StudentExercise.chapter_id == lesson.chapter_id,
+                                                                      StudentExercise.student_lesson_archive_id == student_lesson_archive.id).first()
+                        if not exist_exercise:
+                            student_exercise = StudentExercise(student_id=student.id, lesson_id=lesson_id,
+                                                               exercise_id=exercise.id, subject_id=exercise.subject_id,
+                                                               type_id=exercise.type_id, level_id=exercise.level_id,
+                                                               boolean=status, block_id=block.id,
+                                                               answer_id=exercise_answer.id, value=ans['checked'],
+                                                               student_chapter_id=student_lesson.self_chapter_id,
+                                                               chapter_id=lesson.chapter_id,
+                                                               student_lesson_archive_id=student_lesson_archive.id)
+                            student_exercise.add_commit()
+                        else:
+                            return jsonify({
+                                'msg': 'seryoz'
+                            })
+                update_ratings(student, lesson_id)
 
         elif answer['type'] == "text":
             for ans in answer['answers']:
@@ -92,13 +129,21 @@ def complete_exercise():
                     exist_exercise = StudentExercise.query.filter(StudentExercise.student_id == student.id,
                                                                   StudentExercise.lesson_id == lesson_id,
                                                                   StudentExercise.exercise_id == exercise.id,
-                                                                  StudentExercise.answer_id == exercise_answer.id).first()
+                                                                  StudentExercise.answer_id == exercise_answer.id,
+                                                                  StudentExercise.student_chapter_id == student_lesson.self_chapter_id,
+                                                                  StudentExercise.chapter_id == lesson.chapter_id,
+                                                                  StudentExercise.student_lesson_archive_id == student_lesson_archive.id
+                                                                  ).first()
                     if not exist_exercise:
                         student_exercise = StudentExercise(student_id=student.id, lesson_id=lesson_id,
                                                            exercise_id=exercise.id, subject_id=exercise.subject_id,
                                                            type_id=exercise.type_id, level_id=exercise.level_id,
                                                            boolean=exercise_status, block_id=block.id,
-                                                           answer_id=exercise_answer.id, value=ans['item'])
+                                                           student_chapter_id=student_lesson.self_chapter_id,
+                                                           chapter_id=lesson.chapter_id,
+                                                           student_lesson_archive_id=student_lesson_archive.id,
+                                                           answer_id=exercise_answer.id, value=ans['item'],
+                                                           )
                         student_exercise.add_commit()
                     else:
                         return jsonify({
@@ -115,13 +160,21 @@ def complete_exercise():
                     exist_exercise = StudentExercise.query.filter(StudentExercise.student_id == student.id,
                                                                   StudentExercise.lesson_id == lesson_id,
                                                                   StudentExercise.exercise_id == exercise.id,
-                                                                  StudentExercise.answer_id == exercise_answer.id).first()
+                                                                  StudentExercise.answer_id == exercise_answer.id,
+                                                                  StudentExercise.student_chapter_id == student_lesson.self_chapter_id,
+                                                                  StudentExercise.chapter_id == lesson.chapter_id,
+                                                                  StudentExercise.student_lesson_archive_id == student_lesson_archive.id
+                                                                  ).first()
                     if not exist_exercise:
                         student_exercise = StudentExercise(student_id=student.id, lesson_id=lesson_id,
                                                            exercise_id=exercise.id, subject_id=exercise.subject_id,
                                                            type_id=exercise.type_id, level_id=exercise.level_id,
                                                            boolean=exercise_status, block_id=block.id,
-                                                           answer_id=exercise_answer.id, value=ans['value'])
+                                                           answer_id=exercise_answer.id, value=ans['value'],
+                                                           student_chapter_id=student_lesson.self_chapter_id,
+                                                           chapter_id=lesson.chapter_id,
+                                                           student_lesson_archive_id=student_lesson_archive.id
+                                                           )
                         student_exercise.add_commit()
                     else:
                         return jsonify({
@@ -131,10 +184,28 @@ def complete_exercise():
     update_ratings(student, lesson_id)
     exercise_block = StudentExerciseBlock.query.filter(StudentExerciseBlock.lesson_id == lesson_id,
                                                        StudentExerciseBlock.student_id == student.id,
-                                                       StudentExerciseBlock.exercise_id == exercise_id).order_by(
+                                                       StudentExerciseBlock.exercise_id == exercise_id,
+                                                       StudentExerciseBlock.student_lesson_archive_id == student_lesson_archive.id).order_by(
         StudentExerciseBlock.id).all()
 
     return jsonify({
         "success": True,
-        "block": iterate_models(exercise_block)
+        "block": iterate_models(exercise_block),
+        "archive_id": student_lesson_archive.id
+    })
+
+
+@app.route(f'{api}/reset_lesson/<archive_id>')
+@jwt_required()
+def reset_lesson(archive_id):
+    student_lesson_archive = StudentLessonArchive.query.filter(StudentLessonArchive.id == archive_id).first()
+    student_lesson_archive.status = True
+    student_lesson_archive.reset_date = datetime.datetime.now()
+    db.session.commit()
+
+    lesson = Lesson.query.filter(Lesson.id == student_lesson_archive.lesson_id).first()
+
+    return jsonify({
+        "success": True,
+        "data": lesson.convert_json(entire=True)
     })

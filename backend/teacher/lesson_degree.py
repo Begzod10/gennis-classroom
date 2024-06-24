@@ -1,6 +1,7 @@
 from app import app, api, jsonify, request, contains_eager, db
 from backend.models.basic_model import Exercise, Subject, SubjectLevel, StudentExercise, StudentLevel, StudentLesson, \
-    ExerciseBlock, Group, Student, Teacher, Chapter, Lesson, StudentChapter, ExerciseAnswers, StudentExerciseBlock
+    ExerciseBlock, Group, Student, Teacher, Chapter, Lesson, StudentChapter, ExerciseAnswers, StudentExerciseBlock, \
+    StudentLessonArchive
 from backend.models.settings import iterate_models
 from flask_jwt_extended import jwt_required
 from sqlalchemy.orm import joinedload
@@ -14,7 +15,6 @@ def group_degree():
     chapter_id = request.get_json()['chapter_id'] if 'chapter_id' in request.get_json() else None
     lesson_id = request.get_json()['lesson_id'] if 'lesson_id' in request.get_json() else None
     level = SubjectLevel.query.filter(SubjectLevel.id == level_id).first()
-    print(lesson_id)
     students = Student.query.join(Student.groups).options(contains_eager(Student.groups)).filter(
         Group.id == group_id).all()
 
@@ -77,8 +77,8 @@ def group_degree():
                 student_lessons_true = StudentLesson.query.filter(
                     StudentLesson.student_id == student_chapter.student_id,
                     StudentLesson.chapter_id == chapter.id, StudentLesson.finished == True).count()
-                chapter_percent += round((student_lessons_true / all_lessons) * 100)
-                exercise_percent += round((true_exercises / len(exercise_answers)) * 100)
+                chapter_percent += round((student_lessons_true / all_lessons) * 100) if all_lessons != 0 else 0
+                exercise_percent += round((true_exercises / len(exercise_answers)) * 100) if exercise_answers else 0
                 info['students'].append({
                     "id": chapter.id,
                     "student_chapter": student_chapter.id,
@@ -86,8 +86,8 @@ def group_degree():
                     "student_name": student_chapter.student.user.name,
                     "student_surname": student_chapter.student.user.surname,
                     "student_id": student_chapter.student_id,
-                    "exercises": f"{round((true_exercises / len(exercise_answers)) * 100)}%",
-                    "finished": f"{round((student_lessons_true / all_lessons) * 100)}%"
+                    "exercises": f"{round((true_exercises / len(exercise_answers)) * 100) if exercise_answers else 0}%",
+                    "finished": f"{round((student_lessons_true / all_lessons) * 100) if all_lessons else 0}%"
                 })
 
             info['finished'] = f"{round(chapter_percent / len(students))}%"
@@ -130,7 +130,7 @@ def group_degree():
                 "id": lesson.id,
                 "name": lesson.name,
                 "finished": f"{round((students_lessons_true / len(students)) * 100)}%",
-                "exercises": f"{round((true_exercises / len(exercises_blocks)) * 100)}%",
+                "exercises": f"{round((true_exercises / len(exercises_blocks)) * 100) if exercises_blocks else 0}%",
                 "students": []
             }
             students_lessons = StudentLesson.query.filter(StudentLesson.lesson_id == lesson.id,
@@ -193,7 +193,12 @@ def student_exercise_block(lesson_id, student_id):
         StudentExerciseBlock.id).all()
     student_exercises = StudentExercise.query.filter(StudentExercise.lesson_id == lesson_id,
                                                      StudentExercise.student_id == student_id).first()
-    data = lesson.degree_convert("exc") if student_exercises else ""
+    student_lesson_archive = StudentLessonArchive.query.filter(
+        StudentLessonArchive.student_lesson == lesson.id, StudentLessonArchive.student_id == student_id,
+        StudentLessonArchive.status == False, StudentLessonArchive.lesson_id == lesson_id).first()
+
+    data = lesson.degree_convert("exc",
+                                 student_lesson_archive_id=student_lesson_archive.id) if student_exercises else ""
 
     return jsonify({
         "data": {

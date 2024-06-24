@@ -37,9 +37,13 @@ jwt = JWTManager(app)
 api = '/api'
 # platform_server = 'https://www.gennis.uz'
 
-platform_server = "http://192.168.68.104:5002"
+
+# platform_server = "http://192.168.68.104:5002"
 
 # platform_server = "http://192.168.0.105:5002"
+
+
+platform_server = "http://192.168.68.108:5002"
 
 
 # basics

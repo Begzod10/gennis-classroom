@@ -147,10 +147,10 @@ class Group(db.Model):
     teacher_id = Column(Integer)
     location_id = Column(Integer, ForeignKey('location.id'))
 
-    def convert_json(self, entire=False):
+    def convert_json(self, entire=False, user=None):
         teacher = Teacher.query.filter(Teacher.id == self.teacher_id).first()
-        # student_subject = StudentSubject.query.filter(StudentSubject.student_id == user.student.id,
-        #                                               StudentSubject.subject_id == self.subject_id).first() if user.student else None
+        student_subject = StudentSubject.query.filter(StudentSubject.student_id == user.student.id,
+                                                      StudentSubject.subject_id == self.subject_id).first() if user and user.student else None
 
         info = {
             "id": self.id,
@@ -161,17 +161,18 @@ class Group(db.Model):
             "subject": {
                 "id": self.subject.id,
                 "name": self.subject.name,
-                # "finished": student_subject.finished if student_subject else None,
-                # "percentage": student_subject.percentage if student_subject else None
+                "finished": student_subject.finished if student_subject else None,
+                "percentage": student_subject.percentage if student_subject else None
             },
-            "course": self.subject_level.convert_json() if self.subject_level else "",
+            "course": self.subject_level.convert_json() if self.subject_level else {},
             "teacher": {
                 "id": teacher.user_id if teacher else None,
                 "name": teacher.user.name if teacher else None,
                 "surname": teacher.user.surname if teacher else None,
                 "salary": self.teacher_salary if teacher else None
             },
-            "students": []
+            "students": [],
+
         }
         if self.subject_level:
             info['course'] = {
