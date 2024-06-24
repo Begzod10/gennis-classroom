@@ -89,9 +89,10 @@ def group_profile(group_id, token):
                 "msg": "Not logged in"
             })
         group_level = response.json()['group']['level']
-        level = SubjectLevel.query.filter(SubjectLevel.name == group_level).first()
-        group.level_id = level.id
-        db.session.commit()
+        if group_level:
+            level = SubjectLevel.query.filter(SubjectLevel.name == group_level).first()
+            group.level_id = level.id
+            db.session.commit()
         users = response.json()['users']
         for item in users:
             location_id = item['location']['id']
@@ -232,6 +233,11 @@ def group_profile(group_id, token):
         subject_level = SubjectLevel.query.filter(SubjectLevel.subject_id == group.subject_id).order_by(
             SubjectLevel.id).all()
     user = User.query.filter_by(user_id=identity).first()
+    print({
+        "data": group.convert_json(user=user),
+        "subject_levels": iterate_models(levels),
+        "curriculum": iterate_models(subject_level)
+    })
     return jsonify({
         "data": group.convert_json(user=user),
         "subject_levels": iterate_models(levels),

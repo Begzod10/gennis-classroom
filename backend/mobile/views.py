@@ -177,7 +177,7 @@ def mobile_check_group_info(gr):
 @app.route(f'{api}/mobile/group_statistics/<int:group_id>')
 @jwt_required()
 # @cross_origin()
-def group_statistics(group_id):
+def mobile_group_statistics(group_id):
     print(get_jwt_identity())
     user = User.query.filter_by(user_id=get_jwt_identity()).first()
     print(user)
