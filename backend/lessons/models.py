@@ -15,8 +15,6 @@ class Subject(db.Model):
     lesson = relationship('Lesson', backref="subject", order_by="Lesson.id")
     exercise = relationship('Exercise', backref="subject", order_by="Exercise.id")
     student_question = relationship("StudentQuestion", lazy="select", order_by="StudentQuestion.id")
-    question_answers = relationship("QuestionAnswers", lazy="select", order_by="QuestionAnswers.id")
-    answer_comment = relationship("QuestionAnswerComment", lazy="select", order_by="QuestionAnswerComment.id")
     donelessons = relationship('StudentExercise', backref="subject", order_by="StudentExercise.id")
     studentsubject = relationship('StudentSubject', backref="subject", order_by="StudentSubject.id")
     certificate = relationship('Certificate', backref="subject", order_by="Certificate.id")
@@ -89,6 +87,7 @@ class SubjectLevel(db.Model):
     certificate = relationship('Certificate', backref="subject_level", order_by="Certificate.id")
     groups = relationship('Group', backref="subject_level", order_by="Group.id")
     chapters = relationship('Chapter', backref="subject_level", order_by="Chapter.id")
+    student_question = relationship('StudentQuestion', backref="subject_level", order_by="StudentQuestion.id")
 
     def convert_json(self, entire=False):
         return {
@@ -1185,7 +1184,6 @@ class StudentLevel(db.Model):
             },
             "desc": self.subject_level.desc,
             "disabled": self.subject_level.disabled,
-
         }
 
     def add_commit(self):

@@ -7,6 +7,17 @@ from backend.models.settings import User, Subject, Student, send_subject_server,
 import json
 
 
+@app.route(f'{api}/get_subjects', methods=["GET", "POST"])
+def get_subjects():
+    subject_name = request.get_json()['subject']
+    subject = Subject.query.filter(Subject.name == subject_name).first()
+    print(subject.levels)
+    print(subject)
+    return jsonify({
+        "status": True
+    })
+
+
 @app.route(f"{api}/info/subjects", methods=["GET", "POST"])
 @cross_origin()
 @jwt_required()
