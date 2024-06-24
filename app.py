@@ -36,7 +36,7 @@ migrate = Migrate(app, db)
 jwt = JWTManager(app)
 api = '/api'
 # platform_server = 'https://www.gennis.uz'
-platform_server = "http://192.168.68.100:5002"
+platform_server = "http://192.168.68.113:5002"
 
 # basics
 from backend.basics.views import *
